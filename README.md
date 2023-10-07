@@ -37,7 +37,7 @@
 
 Установить composer, если он не установлен;
 Перейти в каталог, в который вы будете клонировать проект;
-Выполнить команду composer require pims12/ColdHot;
+Выполнить команду composer require fastr/cold-hot;
 Перейти в каталог vendor/bin;
 Запустить Командную строку и ввести "php start.php".
 
