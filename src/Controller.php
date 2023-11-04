@@ -91,8 +91,6 @@ class Controller
                 $model->storeResult($username, $secretNumber, 0);
                 $model->storeTry($gameId, $triesCounter, $userData, 'Проигрыш');
 
-                $model->closeConnection();
-
                 View::showLose($secretNumber);
                 die();
             } elseif (strlen($userData) === strlen($secretNumber)) {

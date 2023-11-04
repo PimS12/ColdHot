@@ -5,25 +5,21 @@ declare(strict_types=1);
 namespace Pims12\ColdHot\Model;
 
 use SQLite3;
+use RedBeanPHP\R as R;
 
 class Model
 {
-    private $db;
-
     public function __construct($db_path)
     {
-        $this->db = new SQLite3($db_path);
+        R::setup('sqlite:' . $db_path);
     }
 
     public function createId()
     {
-        $query = "SELECT id FROM result_games ORDER BY id DESC LIMIT 1";
+        $lastGame = R::findOne('results', 'ORDER BY id DESC');
 
-        $lastGameId = $this->db->query($query);
-
-        if ($row = $lastGameId->fetchArray()) {
-            $lastId = $row[0];
-            return $lastId + 1;
+        if ($lastGame) {
+            return $lastGame->id + 1;
         } else {
             return 1;
         }
@@ -31,78 +27,53 @@ class Model
 
     public function createTables()
     {
-
-        $query = "CREATE TABLE IF NOT EXISTS result_games (
+        R::exec("CREATE TABLE IF NOT EXISTS results (
             id INTEGER PRIMARY KEY,
             player_name TEXT NOT NULL,
             secret_number INTEGER NOT NULL,
             created_at  DATETIME NOT NULL,
             result BOOLEAN NOT NULL
-        )";
+        )");
 
-        $this->db->exec($query);
-
-        $query = "CREATE TABLE IF NOT EXISTS tries (
+        R::exec("CREATE TABLE IF NOT EXISTS tries (
             id INTEGER PRIMARY KEY,
             game_id INTEGER NOT NULL,
             number_try INTEGER NOT NULL,
             number INTEGER NOT NULL,
             result TEXT NOT NULL
-        )";
+        )");
 
-        $this->db->exec($query);
-
-        echo "Таблицы успешно созданы";
-    }
-
-    public function closeConnection()
-    {
-        $this->db->close();
+        // echo "Таблицы успешно созданы";
     }
 
     public function storeResult($playerName, $secretNumber, $result)
     {
-        $now = date('Y-m-d H:i:s');
+        $game = R::dispense("results");
 
-        $query = "INSERT INTO result_games (player_name, secret_number, created_at, result) VALUES ('$playerName', $secretNumber, '$now', '$result')";
-
-        $this->db->exec($query);
+        $game->player_name = $playerName;
+        $game->secret_number = $secretNumber;
+        $game->created_at = date('Y-m-d H:i:s');
+        $game->result = $result ? 1 : 0;
+        R::store($game);
     }
 
     public function storeTry($gameId, $numberTry, $number, $result)
     {
-        $query = "INSERT INTO tries (game_id, number_try, number, result) VALUES ('$gameId', '$numberTry', '$number', '$result')";
-
-        $this->db->exec($query);
+        $try = R::dispense('tries');
+        $try->game_id = $gameId;
+        $try->number_try = $numberTry;
+        $try->number = $number;
+        $try->result = $result;
+        R::store($try);
     }
 
     public function getGames()
     {
-        $query = "SELECT * FROM result_games";
-
-        $result = $this->db->query($query);
-
-        $games = [];
-
-        while ($game = $result->fetchArray(SQLITE3_ASSOC)) {
-            $games[] = $game;
-        }
-
-        return $games;
+        return R::findAll('results');
     }
 
     public function getGame($gameId)
     {
-        $query = "SELECT * FROM tries WHERE game_id = '$gameId'";
-
-        $result = $this->db->query($query);
-
-        $tries = [];
-
-        while ($try = $result->fetchArray(SQLITE3_ASSOC)) {
-            $tries[] = $try;
-        }
-
-        return $tries;
+        return R::find('tries', 'game_id = ?', [$gameId]);
     }
 }
